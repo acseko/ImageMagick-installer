@@ -1,14 +1,23 @@
-FROM rockylinux:8 AS build
+FROM redhat/ubi8:latest AS build
 
 ARG IMAGEMAGICK_VERSION=7.1.0-16
 ARG TARGET_ARCH=x86_64
+ENV TARGET_ARCH=${TARGET_ARCH}
 
-RUN yum install -y epel-release && \
-  yum install -y git make yum-utils rpm-build libtool-ltdl libtool-ltdl-devel && \
-  yum group install -y "Development Tools" --exclude asciidoc --exclude graphviz && \
-  yum clean all && \
-  yum-config-manager --enable powertools && \
-  yum clean all
+RUN dnf -y --setopt=install_weak_deps=False --setopt=tsflags=nodocs install \
+      http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-gpg-keys-8-6.el8.noarch.rpm \
+      http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/Packages/centos-stream-repos-8-6.el8.noarch.rpm \
+ && dnf -y --setopt=install_weak_deps=False --setopt=tsflags=nodocs install epel-release \
+ && dnf config-manager --set-enabled powertools
+ 
+RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+  yum repolist && \
+  yum --disableplugin=subscription-manager install -y git make yum-utils rpm-build autoconf \
+      automake binutils gcc gcc-c++ gdb glibc-devel libtool pkgconf pkgconf-m4 \
+      pkgconf-pkg-config redhat-rpm-config rpm-build strace OpenEXR-libs openjpeg2 \
+      ctags perl-Fedora-VSP perl-generators source-highlight cmake expect rpmlint \
+      --exclude asciidoc --exclude graphviz && \
+  yum --disableplugin=subscription-manager clean all
 
 WORKDIR /build
 
