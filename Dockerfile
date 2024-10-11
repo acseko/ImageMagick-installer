@@ -1,6 +1,6 @@
 FROM rockylinux:8 AS build
 
-ARG IMAGEMAGICK_VERSION=7.1.0-16
+ARG IMAGEMAGICK_VERSION=7.1.0-62
 ARG TARGET_ARCH=x86_64
 
 RUN yum install -y epel-release && \
@@ -25,17 +25,19 @@ WORKDIR /build/ImageMagick
 # Drop graphviz and libwmf, since these depend on urw-base35-fonts
 RUN sed -i '/BuildRequires.*lqr/d; /--with-lqr/d' ImageMagick.spec.in && \
     sed -i '/BuildRequires.*raqm/d; s/--with-raqm/--without-raqm/' ImageMagick.spec.in && \
-    sed -i '/BuildRequires.*ghostscript-devel/d; s/--with-gslib/--without-gslib/' ImageMagick.spec.in && \
-    sed -i '/BuildRequires.*LibRaw/d; /--with-raw/d' ImageMagick.spec.in && \
-    sed -i '/BuildRequires.*urw-base35-fonts/d; /--with-urw-base35-fonts/d; /urw-base35-fonts/d' ImageMagick.spec.in && \
-    sed -i '/BuildRequires.*graphviz/d' ImageMagick.spec.in && \
-    sed -i '/BuildRequires.*libwmf/d' ImageMagick.spec.in
+    sed -i '/BuildRequires.*ghostscript-devel/d; /BuildRequires.*libgs-devel.*/d; s/--with-gslib/--without-gslib/' ImageMagick.spec.in && \
+    sed -i '/BuildRequires.*LibRaw/Id; /--with-raw/d' ImageMagick.spec.in && \
+    sed -i '/BuildRequires.*urw-base35-fonts/d; /--with-urw-base35-font.*/d; /urw-base35-fonts/d' ImageMagick.spec.in && \
+    sed -i '/BuildRequires.*graphviz.*/d; /BuildRequires.*libcgraph.*/d; s/--with-gvc/--without-gvc/' ImageMagick.spec.in && \
+    sed -i '/BuildRequires.*libwmf.*/d; s/--with-wmf/--without-wmf/' ImageMagick.spec.in && \
+    sed -i '/BuildRequires.*libheif.*/d; s/--with-heic/--without-heic/' ImageMagick.spec.in
 
-RUN ./configure --with-gvc=no --with-gslib=no --with-wmf=no && \
+RUN ./configure && \
     make dist-xz && \
-    make srpm
+    make srpm && \
+    rpm -qp --requires "/build/ImageMagick/ImageMagick-$IMAGEMAGICK_VERSION.src.rpm"
 
-RUN yum-builddep -y "ImageMagick-$IMAGEMAGICK_VERSION.src.rpm" --exclude urw-base35-fonts --exclude graphviz --exclude libwmf && \
+RUN yum-builddep -y "ImageMagick-$IMAGEMAGICK_VERSION.src.rpm" --exclude urw-base35-fonts --exclude graphviz --exclude libwmf&& \
     rpmbuild --rebuild --nocheck --target "$TARGET_ARCH" "ImageMagick-$IMAGEMAGICK_VERSION.src.rpm" && \
     echo "Imagemagick $IMAGEMAGICK_VERSION for $TARGET_ARCH built successfully." && \
     ls -lR /root/rpmbuild/RPMS/  && \
@@ -50,7 +52,7 @@ RUN yum-builddep -y "ImageMagick-$IMAGEMAGICK_VERSION.src.rpm" --exclude urw-bas
 # Testing installation.
 FROM redhat/ubi8:latest
 
-ARG IMAGEMAGICK_VERSION=7.1.0-16
+ARG IMAGEMAGICK_VERSION=7.1.0-62
 ARG TARGET_ARCH=x86_64
 
 WORKDIR /install
