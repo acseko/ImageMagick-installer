@@ -1,6 +1,6 @@
 FROM rockylinux:8 AS build
 
-ARG IMAGEMAGICK_VERSION=7.1.0-62
+ARG IMAGEMAGICK_VERSION=7.1.1-40
 ARG TARGET_ARCH=x86_64
 
 RUN yum install -y epel-release && \
